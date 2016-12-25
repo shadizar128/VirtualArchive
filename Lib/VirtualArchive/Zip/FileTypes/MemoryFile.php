@@ -27,11 +27,6 @@ class MemoryFile implements IVirtualComponent {
     protected $_position = 0;
 
     /**
-     * @var bool Should add metadata
-     */
-    protected $_addMetadata;
-
-    /**
      * @var array File metadata
      */
     protected $_metadata;
@@ -72,9 +67,6 @@ class MemoryFile implements IVirtualComponent {
         $this->_content .= pack("V", $this->_metadata['compressedSize']);
         $this->_content .= pack("V", $this->_metadata['uncompressedSize']);
 
-        // reset
-        $this->reset();
-
     }
 
     /**
@@ -94,7 +86,6 @@ class MemoryFile implements IVirtualComponent {
         // reset counters
         $this->_position = 0;
         $this->_hasMoreContent = true;
-        $this->_addMetadata = true;
 
     }
 
@@ -108,12 +99,8 @@ class MemoryFile implements IVirtualComponent {
      */
     public function read($count) {
 
-        if ($this->_addMetadata) {
-            $this->addMetadata();
-        }
-
         $bytes = "";
-        if (!$this->hasMoreContent()) {
+        if ($this->_hasMoreContent == false) {
             return $bytes;
         }
 
@@ -129,16 +116,22 @@ class MemoryFile implements IVirtualComponent {
         // update archive position
         $this->_archive->incrementPosition($bytesRead);
 
+        // mark end of content
+        if ($this->_position >= strlen($this->_content)) {
+            $this->_hasMoreContent = false;
+        }
+
         return $bytes;
 
     }
 
     /**
-     * Add metadata to archive headers
+     * Event fired when reading starts
      */
-    public function addMetadata() {
+    public function onStartReading() {
 
-        $this->_addMetadata = false;
+        // reset
+        $this->reset();
 
         $header  = Constants::HEADER_SIGNATURE;
         $header .= Constants::VERSION_MADE_BY;
@@ -171,18 +164,19 @@ class MemoryFile implements IVirtualComponent {
     }
 
     /**
+     * Event fired when reading stops
+     */
+    public function onFinishReading() {
+        // nothing to do here
+    }
+
+    /**
      * Return true if object has more content and false otherwise
      *
      * @return bool
      */
     public function hasMoreContent() {
-
-        if ($this->_hasMoreContent) {
-            $this->_hasMoreContent = $this->_position < strlen($this->_content);
-        }
-
         return $this->_hasMoreContent;
-
     }
 
 }

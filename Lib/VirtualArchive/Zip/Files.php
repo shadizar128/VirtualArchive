@@ -4,39 +4,6 @@ use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 
 class Files implements IVirtualComponent {
 
-    // central directory end default length
-    const CENTRAL_DIRECTORY_END_DEFAULT_LENGTH = 22;
-
-    // central directory end maximum search limit
-    const CENTRAL_DIRECTORY_END_MAXIMUM_LENGTH = 1000;
-
-    // central directory end signature
-    const CENTRAL_DIR_END_SIGNATURE = "\x50\x4b\x05\x06";
-
-    // data file header signature
-    const DATA_FILE_HEADER_SIGNATURE = "\x50\x4b\x03\x04";
-
-    // central directory file signature
-    const CENTRAL_DIR_FILE_HEADER_SIGNATURE = "\x50\x4b\x01\x02";
-
-    // version made by
-    const HEADER_VERSION_MADE_BY = "\x14\x00";
-
-    // version needed to extract
-    const HEADER_VERSION_REQUIRED = "\x14\x00";
-
-    // general purpose bit flags
-    const HEADER_GENERAL_FLAGS = "\x00\x00";
-
-    // compression method
-    const HEADER_COMPRESSION_METHOD = "\x08\x00";
-
-    // last mod time
-    const HEADER_LAST_MOD_TIME = "\x00\x00";
-
-    // last mod date
-    const HEADER_LAST_MOD_DATE = "\x00\x00";
-
     /**
      * @var VirtualArchive
      */
@@ -51,6 +18,11 @@ class Files implements IVirtualComponent {
      * @var bool True if there is more content to read
      */
     protected $_hasMoreContent = true;
+
+    /**
+     * @var IVirtualComponent
+     */
+    protected $_currentFile;
 
     /**
      * Class constructor.
@@ -91,8 +63,8 @@ class Files implements IVirtualComponent {
             $file->reset();
         }
 
-        // reset content
-        reset($this->_content);
+        // reset current file
+        $this->_currentFile = null;
 
         // reset counters
         $this->_hasMoreContent = true;
@@ -112,9 +84,8 @@ class Files implements IVirtualComponent {
         $bytes = "";
         while (true) {
 
-            // no more content
-            if (!$this->hasMoreContent()) {
-                break;
+            if ($this->_hasMoreContent == false) {
+                return $bytes;
             }
 
             // finished reading $count bytes
@@ -123,13 +94,16 @@ class Files implements IVirtualComponent {
                 break;
             }
 
-            // get current file
-            $file = current($this->_content);
+            if ($this->_currentFile == null) {
+                $this->_moveToNextFile();
+            }
 
-            if ($file->hasMoreContent()) {
-                $bytes .= $file->read($bytesToRead);
-            } else {
-                next($this->_content);
+            if ($this->_currentFile) {
+                $bytes .= $this->_currentFile->read($bytesToRead);
+            }
+
+            if (!$this->_currentFile->hasMoreContent()) {
+                $this->_moveToNextFile();
             }
 
         }
@@ -139,18 +113,60 @@ class Files implements IVirtualComponent {
     }
 
     /**
+     * Move cursor to the next file
+     */
+    protected function _moveToNextFile() {
+
+        if ($this->_currentFile) {
+
+            // handle stop reading event for previous file
+            $this->_currentFile->onFinishReading();
+
+            // move to next element in array
+            $this->_currentFile = next($this->_content);
+
+        } else {
+
+            // get first element in array
+            $this->_currentFile = reset($this->_content);
+
+        }
+
+        if ($this->_currentFile) {
+
+            // handle start reading event for new file
+            $this->_currentFile->onStartReading();
+
+        } else {
+
+            // mark end of content
+            $this->_hasMoreContent = false;
+
+        }
+
+    }
+
+    /**
      * Return true if object has more content and false otherwise
      *
      * @return bool
      */
     public function hasMoreContent() {
-
-        if ($this->_hasMoreContent) {
-            $this->_hasMoreContent = current($this->_content) !== false;
-        }
-
         return $this->_hasMoreContent;
+    }
 
+    /**
+     * Event fired when reading starts
+     */
+    public function onStartReading() {
+        $this->reset();
+    }
+
+    /**
+     * Event fired when reading stops
+     */
+    public function onFinishReading() {
+        // nothing to do here
     }
 
 }

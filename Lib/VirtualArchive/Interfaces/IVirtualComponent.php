@@ -31,4 +31,14 @@ interface IVirtualComponent {
      */
     public function hasMoreContent();
 
+    /**
+     * Event fired when reading starts
+     */
+    public function onStartReading();
+
+    /**
+     * Event fired when reading stops
+     */
+    public function onFinishReading();
+
 }

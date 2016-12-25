@@ -70,7 +70,7 @@ class Headers implements IVirtualComponent {
     public function read($count) {
 
         $bytes = "";
-        if (!$this->hasMoreContent()) {
+        if ($this->_hasMoreContent == false) {
             return $bytes;
         }
 
@@ -83,24 +83,16 @@ class Headers implements IVirtualComponent {
         // update archive position
         $this->_archive->incrementPosition(strlen($bytes));
 
+        // mark end of content
+        if ($this->_position >= strlen($this->_content)) {
+            $this->_hasMoreContent = false;
+        }
+
         return $bytes;
 
     }
 
-    /**
-     * Return true if object has more content and false otherwise
-     *
-     * @return bool
-     */
-    public function hasMoreContent() {
 
-        if ($this->_hasMoreContent) {
-            $this->_hasMoreContent = $this->_position < strlen($this->_content);
-        }
-
-        return $this->_hasMoreContent;
-
-    }
 
     /**
      * Add header
