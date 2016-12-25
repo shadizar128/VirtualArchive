@@ -69,7 +69,7 @@ class VirtualArchiveStream {
      *
      * @param int $count How many bytes of data from the current position should be returned
      * @return string If there are less than count bytes available, return as many as are available.
-     *                If no more data is available, return either FALSE or an empty string.
+     *                If no more data is available, return an empty string.
      */
     function stream_read($count) {
         return $this->_archive->read($count);
@@ -90,7 +90,7 @@ class VirtualArchiveStream {
      * @return bool
      */
     function stream_eof() {
-        return $this->_archive->isEndOfFile();
+        return $this->_archive->hasMoreContent();
     }
 
 }

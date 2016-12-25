@@ -2,6 +2,7 @@
 namespace Lib\VirtualArchive\Zip;
 use Lib\VirtualArchive\Exceptions\FileNotFoundException;
 use Lib\VirtualArchive\Interfaces\IVirtualArchive;
+use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 
 /**
  * Class that creates a virtual zip archive from other files without creating a new file on disk or storing the data in memory.
@@ -26,12 +27,12 @@ class VirtualArchive implements IVirtualArchive, IVirtualComponent {
     protected $_files;
 
     /**
-     * @var array Current position of the cursor from the begining of the archive
+     * @var int Current position of the cursor from the beginning of the content
      */
     protected $_position = 0;
 
     /**
-     * @var bool A flag to determine if the archive has more content to be read
+     * @var bool A flag to determine if the object has more content to be read
      */
     protected $_hasMoreContent = true;
 
@@ -43,9 +44,9 @@ class VirtualArchive implements IVirtualArchive, IVirtualComponent {
      */
     public function __construct(array $params) {
 
-        $this->_centralDirectory = new CentralDirectory();
-        $this->_headers = new Headers();
-        $this->_files = new Files($params);
+        $this->_centralDirectory = new CentralDirectory($this, $params);
+        $this->_headers = new Headers($this, $params);
+        $this->_files = new Files($this, $params);
 
     }
 
@@ -72,72 +73,40 @@ class VirtualArchive implements IVirtualArchive, IVirtualComponent {
     }
 
     /**
-     * Read $count bytes from the archive, null given when eof
+     * Read $count bytes from the object
      *
      * @param int $count Number of bytes to read
-     * @return null|string
+     * @return string
      *
      */
     public function read($count) {
 
-        // result
         $bytes = "";
+        if (!$this->hasMoreContent()) {
+            return $bytes;
+        }
 
-        // flag to indicate the end of line
-        $endOfFile = true;
-
-        // read from the original file until the start of central directory
-        $bytesToRead = min($count, max(0, $this->_bytes['disk'] - $this->_pointers['disk']));
+        // read from files
+        $bytesToRead = $count - strlen($bytes);
         if ($bytesToRead > 0) {
-            $bytes .= fread($this->_fileHandle, $bytesToRead);
-            $count -= $bytesToRead;
-            $this->_pointers['disk'] += $bytesToRead;
-            $endOfFile = false;
+            $bytes .= $this->_files->read($bytesToRead);
         }
 
-        // if more bytes left to read
-        if ($count > 0) {
-
-            // read from the additional fires
-            $bytesToRead = min($count, max(0, $this->_bytes['memory'] - $this->_pointers['memory']));
-            if ($bytesToRead > 0) {
-                $bytes .= substr($this->_additionalData, $this->_pointers['memory'], $bytesToRead);
-                $count -= $bytesToRead;
-                $this->_pointers['memory'] += $bytesToRead;
-                $endOfFile = false;
-            }
-
+        // read from headers
+        $bytesToRead = $count - strlen($bytes);
+        if ($bytesToRead > 0) {
+            $bytes .= $this->_headers->read($bytesToRead);
         }
 
-        // if more bytes left to read
-        if ($count > 0) {
-
-            // read from the central directory headers
-            $bytesToRead = min($count, max(0, $this->_bytes['cdrHeaders'] - $this->_pointers['cdrHeaders']));
-            if ($bytesToRead > 0) {
-                $bytes .= substr($this->_centralDirectoryHeaders, $this->_pointers['cdrHeaders'], $bytesToRead);
-                $count -= $bytesToRead;
-                $this->_pointers['cdrHeaders'] += $bytesToRead;
-                $endOfFile = false;
-            }
-
+        // read from central directory
+        $bytesToRead = $count - strlen($bytes);
+        if ($bytesToRead > 0) {
+            $bytes .= $this->_centralDirectory->read($bytesToRead);
         }
 
-        // if more bytes left to read
-        if ($count > 0) {
+        $this->_position += strlen($bytes);
 
-            // read from the end of central directory
-            $bytesToRead = min($count, max(0, $this->_bytes['cdrEnd'] - $this->_pointers['cdrEnd']));
-            if ($bytesToRead > 0) {
-                $bytes .= substr($this->_centralDirectoryEnd, $this->_pointers['cdrEnd'], $bytesToRead);
-                $this->_pointers['cdrEnd'] += $bytesToRead;
-                $endOfFile = false;
-            }
-
-        }
-
-        // return bytes read or null if end of file
-        return $endOfFile ? false : $bytes;
+        return $bytes;
 
     }
 
@@ -147,7 +116,7 @@ class VirtualArchive implements IVirtualArchive, IVirtualComponent {
      * @return int
      */
     public function getPosition() {
-        return array_sum($this->_position);
+        return $this->_position;
     }
 
     /**

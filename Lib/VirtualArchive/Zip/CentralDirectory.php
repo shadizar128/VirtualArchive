@@ -37,22 +37,77 @@ class CentralDirectory implements IVirtualComponent {
     );
 
     /**
-     * @var string Archive end structure
+     * @var VirtualArchive
      */
-    protected $_data;
+    protected $_archive;
+
+    /**
+     * @var string Content
+     */
+    protected $_content;
+
+    /**
+     * @var bool True if there is more content to read
+     */
+    protected $_hasMoreContent = true;
+
+    /**
+     * @var int Cursor position
+     */
+    protected $_position = 0;
 
     /**
      * Class constructor.
+     * @param VirtualArchive $archive
+     * @param array $params
      */
-    public function __construct() {
+    public function __construct(VirtualArchive $archive, array $params) {
+
+        // set archive
+        $this->_archive = $archive;
+
+        // reset
         $this->reset();
+
     }
 
     /**
-     * Reset all data
+     * Reset data
      */
     public function reset() {
-        $this->_data = file_get_contents($this->_baseZipPath);
+
+        // reset content
+        $this->_content = file_get_contents($this->_baseZipPath);
+
+        // reset counters
+        $this->_position = 0;
+        $this->_hasMoreContent = true;
+
+    }
+
+    /**
+     * Read data
+     *
+     * @param int $count How many bytes of data from the current position should be returned
+     * @return string If there are less than count bytes available, return as many as are available.
+     *                If no more data is available, return an empty string.
+     *
+     */
+    public function read($count) {
+
+        $bytes = "";
+        if (!$this->hasMoreContent()) {
+            return $bytes;
+        }
+
+        // read data
+        $bytes = substr($this->_content, $this->_position, $count);
+
+        // update position
+        $this->_position += strlen($bytes);
+
+        return $bytes;
+
     }
 
     /**
@@ -61,7 +116,13 @@ class CentralDirectory implements IVirtualComponent {
      * @return bool
      */
     public function hasMoreContent() {
-        return false;
+
+        if ($this->_hasMoreContent) {
+            $this->_hasMoreContent = $this->_position < strlen($this->_content);
+        }
+
+        return $this->_hasMoreContent;
+
     }
 
     /**
@@ -70,9 +131,9 @@ class CentralDirectory implements IVirtualComponent {
      * @param string $name Name of the attribute
      * @param int $value Value of the attribute
      */
-    protected function _setAttribute($name, $value) {
+    public function setAttribute($name, $value) {
         $properties = $this->_map[$name];
-        $this->_data = substr_replace($this->_data, pack($properties['method'], $value), $properties['offset'], $properties['length']);
+        $this->_content = substr_replace($this->_content, pack($properties['method'], $value), $properties['offset'], $properties['length']);
     }
 
     /**
@@ -81,9 +142,9 @@ class CentralDirectory implements IVirtualComponent {
      * @param string $name Name of the attribute
      * @return mixed
      */
-    protected function _getAttribute($name) {
+    public function getAttribute($name) {
         $properties = $this->_map[$name];
-        $value = substr($this->_data, $properties['offset'], $properties['length']);
+        $value = substr($this->_content, $properties['offset'], $properties['length']);
         $value = unpack($properties['method'], $value);
         return array_pop($value);
     }

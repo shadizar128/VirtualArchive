@@ -38,10 +38,38 @@ class Files implements IVirtualComponent {
     const HEADER_LAST_MOD_DATE = "\x00\x00";
 
     /**
+     * @var VirtualArchive
+     */
+    protected $_archive;
+
+    /**
+     * @var IVirtualComponent[]
+     */
+    protected $_content;
+
+    /**
+     * @var bool True if there is more content to read
+     */
+    protected $_hasMoreContent = true;
+
+    /**
      * Class constructor.
+     * @param VirtualArchive $archive
      * @param array $params
      */
-    public function __construct(array $params) {
+    public function __construct(VirtualArchive $archive, array $params) {
+
+        // set archive
+        $this->_archive = $archive;
+
+        // set content
+        $this->_content = $params['files'];
+        foreach ($this->_content as $file) {
+            $file->setArchive($this->_archive);
+        }
+
+        // reset
+        $this->reset();
 
     }
 
@@ -49,6 +77,51 @@ class Files implements IVirtualComponent {
      * Reset all data
      */
     public function reset() {
+
+        // reset content
+        reset($this->_content);
+
+        // reset counters
+        $this->_hasMoreContent = true;
+
+    }
+
+    /**
+     * Read data
+     *
+     * @param int $count How many bytes of data from the current position should be returned
+     * @return string If there are less than count bytes available, return as many as are available.
+     *                If no more data is available, return an empty string.
+     *
+     */
+    public function read($count) {
+
+        $bytes = "";
+        while (true) {
+
+            // no more content
+            if (!$this->hasMoreContent()) {
+                break;
+            }
+
+            // finished reading $count bytes
+            $bytesToRead = $count - strlen($bytes);
+            if ($bytesToRead <= 0) {
+                break;
+            }
+
+            // get current file
+            $file = current($this->_content);
+
+            if ($file->hasMoreContent()) {
+                $bytes .= $file->read($bytesToRead);
+            } else {
+                next($this->_content);
+            }
+
+        }
+
+        return $bytes;
 
     }
 
@@ -58,7 +131,13 @@ class Files implements IVirtualComponent {
      * @return bool
      */
     public function hasMoreContent() {
-        return false;
+
+        if ($this->_hasMoreContent) {
+            $this->_hasMoreContent = current($this->_content) === false;
+        }
+
+        return $this->_hasMoreContent;
+
     }
 
 }

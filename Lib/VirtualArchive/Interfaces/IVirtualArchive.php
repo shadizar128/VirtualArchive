@@ -29,6 +29,6 @@ interface IVirtualArchive {
      *
      * @return bool
      */
-    public function isEndOfFile();
+    public function hasMoreContent();
 
 }
