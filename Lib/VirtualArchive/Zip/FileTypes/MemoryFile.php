@@ -1,25 +1,15 @@
 <?php
 namespace Lib\VirtualArchive\Zip\FileTypes;
+use Lib\VirtualArchive\Core\AbstractVirtualComponent;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 use Lib\VirtualArchive\Zip\Constants;
-use Lib\VirtualArchive\Zip\VirtualArchive;
 
-class MemoryFile implements IVirtualComponent {
-
-    /**
-     * @var VirtualArchive
-     */
-    protected $_archive;
+class MemoryFile extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
      * @var string
      */
     protected $_content;
-
-    /**
-     * @var bool True if there is more content to read
-     */
-    protected $_hasMoreContent = true;
 
     /**
      * @var int Cursor position
@@ -70,22 +60,15 @@ class MemoryFile implements IVirtualComponent {
     }
 
     /**
-     * Set archive
-     *
-     * @param VirtualArchive $archive
-     */
-    public function setArchive($archive) {
-        $this->_archive = $archive;
-    }
-
-    /**
-     * Reset all data
+     * Reset data
      */
     public function reset() {
 
-        // reset counters
+        // call parent method
+        parent::reset();
+
+        // reset position
         $this->_position = 0;
-        $this->_hasMoreContent = true;
 
     }
 
@@ -97,12 +80,7 @@ class MemoryFile implements IVirtualComponent {
      *                If no more data is available, return an empty string.
      *
      */
-    public function read($count) {
-
-        $bytes = "";
-        if ($this->_hasMoreContent == false) {
-            return $bytes;
-        }
+    protected function _read(int $count) {
 
         // read data
         $bytes = substr($this->_content, $this->_position, $count);
@@ -118,7 +96,7 @@ class MemoryFile implements IVirtualComponent {
 
         // mark end of content
         if ($this->_position >= strlen($this->_content)) {
-            $this->_hasMoreContent = false;
+            $this->_status = Constants::STATUS_ALMOST_DONE;
         }
 
         return $bytes;
@@ -129,9 +107,6 @@ class MemoryFile implements IVirtualComponent {
      * Event fired when reading starts
      */
     public function onStartReading() {
-
-        // reset
-        $this->reset();
 
         $header  = Constants::HEADER_SIGNATURE;
         $header .= Constants::VERSION_MADE_BY;
@@ -161,22 +136,6 @@ class MemoryFile implements IVirtualComponent {
         $centralDirectory->incrementAttribute('totalEntries', 1);
         $centralDirectory->incrementAttribute('diskEntries', 1);
 
-    }
-
-    /**
-     * Event fired when reading stops
-     */
-    public function onFinishReading() {
-        // nothing to do here
-    }
-
-    /**
-     * Return true if object has more content and false otherwise
-     *
-     * @return bool
-     */
-    public function hasMoreContent() {
-        return $this->_hasMoreContent;
     }
 
 }

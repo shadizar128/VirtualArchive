@@ -1,13 +1,9 @@
 <?php
 namespace Lib\VirtualArchive\Zip;
+use Lib\VirtualArchive\Core\AbstractVirtualComponent;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 
-class Headers implements IVirtualComponent {
-
-    /**
-     * @var VirtualArchive
-     */
-    protected $_archive;
+class Headers extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
      * @var string Content
@@ -15,47 +11,23 @@ class Headers implements IVirtualComponent {
     protected $_content;
 
     /**
-     * @var bool True if there is more content to read
-     */
-    protected $_hasMoreContent = true;
-
-    /**
      * @var int Cursor position
      */
     protected $_position = 0;
-
-    /**
-     * Class constructor.
-     *
-     * @param array $params
-     */
-    public function __construct(array $params) {
-
-        // reset
-        $this->reset();
-
-    }
-
-    /**
-     * Set archive
-     *
-     * @param VirtualArchive $archive
-     */
-    public function setArchive($archive) {
-        $this->_archive = $archive;
-    }
 
     /**
      * Reset data
      */
     public function reset() {
 
+        // call parent method
+        parent::reset();
+
+        // reset position
+        $this->_position = 0;
+
         // reset content
         $this->_content = "";
-
-        // reset counters
-        $this->_position = 0;
-        $this->_hasMoreContent = true;
 
     }
 
@@ -67,12 +39,7 @@ class Headers implements IVirtualComponent {
      *                If no more data is available, return an empty string.
      *
      */
-    public function read($count) {
-
-        $bytes = "";
-        if ($this->_hasMoreContent == false) {
-            return $bytes;
-        }
+    protected function _read(int $count) {
 
         // read data
         $bytes = substr($this->_content, $this->_position, $count);
@@ -85,14 +52,12 @@ class Headers implements IVirtualComponent {
 
         // mark end of content
         if ($this->_position >= strlen($this->_content)) {
-            $this->_hasMoreContent = false;
+            $this->_status = Constants::STATUS_ALMOST_DONE;
         }
 
         return $bytes;
 
     }
-
-
 
     /**
      * Add header

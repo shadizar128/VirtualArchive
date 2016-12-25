@@ -1,8 +1,9 @@
 <?php
 namespace Lib\VirtualArchive\Zip;
+use Lib\VirtualArchive\Core\AbstractVirtualComponent;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 
-class CentralDirectory implements IVirtualComponent {
+class CentralDirectory extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
      * @var string Path to an empty archive
@@ -37,19 +38,9 @@ class CentralDirectory implements IVirtualComponent {
     );
 
     /**
-     * @var VirtualArchive
-     */
-    protected $_archive;
-
-    /**
      * @var string Content
      */
     protected $_content;
-
-    /**
-     * @var bool True if there is more content to read
-     */
-    protected $_hasMoreContent = true;
 
     /**
      * @var int Cursor position
@@ -57,37 +48,18 @@ class CentralDirectory implements IVirtualComponent {
     protected $_position = 0;
 
     /**
-     * Class constructor.
-     *
-     * @param array $params
-     */
-    public function __construct(array $params) {
-
-        // reset
-        $this->reset();
-
-    }
-
-    /**
-     * Set archive
-     *
-     * @param VirtualArchive $archive
-     */
-    public function setArchive($archive) {
-        $this->_archive = $archive;
-    }
-
-    /**
      * Reset data
      */
     public function reset() {
 
+        // call parent method
+        parent::reset();
+
+        // reset position
+        $this->_position = 0;
+
         // reset content
         $this->_content = file_get_contents(dirname(__FILE__) . $this->_baseZipPath);
-
-        // reset counters
-        $this->_position = 0;
-        $this->_hasMoreContent = true;
 
     }
 
@@ -99,12 +71,7 @@ class CentralDirectory implements IVirtualComponent {
      *                If no more data is available, return an empty string.
      *
      */
-    public function read($count) {
-
-        $bytes = "";
-        if (!$this->hasMoreContent()) {
-            return $bytes;
-        }
+    protected function _read(int $count) {
 
         // read data
         $bytes = substr($this->_content, $this->_position, $count);
@@ -118,22 +85,12 @@ class CentralDirectory implements IVirtualComponent {
         // update archive position
         $this->_archive->incrementPosition(strlen($bytes));
 
-        return $bytes;
-
-    }
-
-    /**
-     * Return true if object has more content and false otherwise
-     *
-     * @return bool
-     */
-    public function hasMoreContent() {
-
-        if ($this->_hasMoreContent) {
-            $this->_hasMoreContent = $this->_position < strlen($this->_content);
+        // mark end of content
+        if ($this->_position >= strlen($this->_content)) {
+            $this->_status = Constants::STATUS_ALMOST_DONE;
         }
 
-        return $this->_hasMoreContent;
+        return $bytes;
 
     }
 

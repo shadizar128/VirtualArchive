@@ -2,7 +2,6 @@
 namespace Lib\VirtualArchive\Zip;
 use Lib\VirtualArchive\Exceptions\FileNotFoundException;
 use Lib\VirtualArchive\Interfaces\IVirtualArchive;
-use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 
 /**
  * Class that creates a virtual zip archive from other files without creating a new file on disk or storing the data in memory.
@@ -27,14 +26,14 @@ class VirtualArchive implements IVirtualArchive {
     protected $_files;
 
     /**
-     * @var int Current position of the cursor from the beginning of the content
+     * @var int Bytes read since the last reset
      */
-    protected $_position = 0;
+    protected $_position;
 
     /**
-     * @var bool A flag to determine if the object has more content to be read
+     * @var bool Read status
      */
-    protected $_hasMoreContent = true;
+    protected $_status = Constants::STATUS_NOT_STARTED;
 
     /**
      * Public constructor
@@ -45,13 +44,10 @@ class VirtualArchive implements IVirtualArchive {
     public function __construct(array $params) {
 
         $this->_centralDirectory = new CentralDirectory($params);
-        $this->_centralDirectory->setArchive($this);
-
         $this->_headers = new Headers($params);
-        $this->_headers->setArchive($this);
-
         $this->_files = new Files($params);
-        $this->_files->setArchive($this);
+
+        $this->reset();
 
     }
 
@@ -68,12 +64,23 @@ class VirtualArchive implements IVirtualArchive {
      */
     public function reset() {
 
+        // reset central directory
+        $this->_centralDirectory->setArchive($this);
         $this->_centralDirectory->reset();
-        $this->_headers->reset();
-        $this->_files->reset();
 
+        // reset headers
+        $this->_headers->setArchive($this);
+        $this->_headers->reset();
+
+        // reset files
+        $this->_files->reset();
+        $this->_files->setArchive($this);
+
+        // reset status
+        $this->_status = Constants::STATUS_NOT_STARTED;
+
+        // reset position
         $this->_position = 0;
-        $this->_hasMoreContent = true;
 
     }
 
@@ -86,24 +93,62 @@ class VirtualArchive implements IVirtualArchive {
      */
     public function read($count) {
 
+        $bytes = '';
+        if ($this->_status == Constants::STATUS_DONE) {
+            return $bytes;
+        }
+
+        if ($this->_status == Constants::STATUS_NOT_STARTED) {
+            $this->onStartReading();
+        }
+
+        // read data
+        $bytes = $this->_read($count);
+
+        if ($this->_status == Constants::STATUS_ALMOST_DONE) {
+            $this->onFinishReading();
+        }
+
+        return $bytes;
+
+    }
+
+    /**
+     * Read $count bytes from the object
+     *
+     * @param int $count Number of bytes to read
+     * @return string
+     *
+     */
+    protected function _read($count) {
+
         $bytes = "";
+        $bytesToRead = $count - strlen($bytes);
 
         // read from files
-        $bytesToRead = $count - strlen($bytes);
-        if ($bytesToRead > 0) {
+        if ($this->_files->hasMoreContent() && $bytesToRead > 0) {
             $bytes .= $this->_files->read($bytesToRead);
+            $bytesToRead = $count - strlen($bytes);
         }
 
         // read from headers
-        $bytesToRead = $count - strlen($bytes);
-        if ($bytesToRead > 0) {
+        if ($this->_headers->hasMoreContent() && $bytesToRead > 0) {
             $bytes .= $this->_headers->read($bytesToRead);
+            $bytesToRead = $count - strlen($bytes);
         }
 
         // read from central directory
-        $bytesToRead = $count - strlen($bytes);
-        if ($bytesToRead > 0) {
+        if ($this->_centralDirectory->hasMoreContent() && $bytesToRead > 0) {
             $bytes .= $this->_centralDirectory->read($bytesToRead);
+            $bytesToRead = $count - strlen($bytes);
+        }
+
+        if (
+            !$this->_files->hasMoreContent() &&
+            !$this->_headers->hasMoreContent() &&
+            !$this->_centralDirectory->hasMoreContent()
+        ) {
+            $this->_status = Constants::STATUS_DONE;
         }
 
         return $bytes;
@@ -135,14 +180,17 @@ class VirtualArchive implements IVirtualArchive {
      */
     public function hasMoreContent() {
 
-        if ($this->_hasMoreContent) {
-            $this->_hasMoreContent =
-                $this->_files->hasMoreContent() ||
-                $this->_headers->hasMoreContent() ||
-                $this->_centralDirectory->hasMoreContent();
+        switch ($this->_status) {
+            case Constants::STATUS_NOT_STARTED:
+            case Constants::STATUS_PROCESSING:
+                $hasMoreContent = true;
+                break;
+            default:
+                $hasMoreContent = false;
+                break;
         }
 
-        return $this->_hasMoreContent;
+        return $hasMoreContent;
 
     }
 
@@ -158,6 +206,26 @@ class VirtualArchive implements IVirtualArchive {
      */
     public function getCentralDirectory() {
         return $this->_centralDirectory;
+    }
+
+    /**
+     * Event fired when reading starts
+     */
+    public function onStartReading() {
+
+        // update status
+        $this->_status = Constants::STATUS_PROCESSING;
+
+    }
+
+    /**
+     * Event fired when reading stops
+     */
+    public function onFinishReading() {
+
+        // update status
+        $this->_status = Constants::STATUS_DONE;
+
     }
 
 }

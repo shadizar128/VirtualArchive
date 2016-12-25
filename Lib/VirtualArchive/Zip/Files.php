@@ -1,23 +1,14 @@
 <?php
 namespace Lib\VirtualArchive\Zip;
+use Lib\VirtualArchive\Core\AbstractVirtualComponent;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 
-class Files implements IVirtualComponent {
-
-    /**
-     * @var VirtualArchive
-     */
-    protected $_archive;
+class Files extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
      * @var IVirtualComponent[]
      */
     protected $_content;
-
-    /**
-     * @var bool True if there is more content to read
-     */
-    protected $_hasMoreContent = true;
 
     /**
      * @var IVirtualComponent
@@ -34,23 +25,6 @@ class Files implements IVirtualComponent {
         // set content
         $this->_content = $params['files'];
 
-        // reset
-        $this->reset();
-
-    }
-
-    /**
-     * Set archive
-     *
-     * @param VirtualArchive $archive
-     */
-    public function setArchive($archive) {
-
-        $this->_archive = $archive;
-        foreach ($this->_content as $file) {
-            $file->setArchive($this->_archive);
-        }
-
     }
 
     /**
@@ -58,16 +32,11 @@ class Files implements IVirtualComponent {
      */
     public function reset() {
 
-        // reset all files
-        foreach ($this->_content as $file) {
-            $file->reset();
-        }
+        // call parent method
+        parent::reset();
 
         // reset current file
         $this->_currentFile = null;
-
-        // reset counters
-        $this->_hasMoreContent = true;
 
     }
 
@@ -79,31 +48,39 @@ class Files implements IVirtualComponent {
      *                If no more data is available, return an empty string.
      *
      */
-    public function read($count) {
+    protected function _read(int $count) {
 
         $bytes = "";
-        while (true) {
+        $bytesToRead = $count;
 
-            if ($this->_hasMoreContent == false) {
-                return $bytes;
-            }
+        while ($bytesToRead > 0) {
 
-            // finished reading $count bytes
-            $bytesToRead = $count - strlen($bytes);
-            if ($bytesToRead <= 0) {
-                break;
-            }
-
+            // if no current file
             if ($this->_currentFile == null) {
-                $this->_moveToNextFile();
+                $this->_currentFile = $this->_getNext();
             }
 
             if ($this->_currentFile) {
-                $bytes .= $this->_currentFile->read($bytesToRead);
-            }
 
-            if (!$this->_currentFile->hasMoreContent()) {
-                $this->_moveToNextFile();
+                // read from current file
+                $bytes .= $this->_currentFile->read($bytesToRead);
+
+                // adjust bytes left to read
+                $bytesToRead = $count - strlen($bytes);
+
+                // if current file has no more content
+                if (!$this->_currentFile->hasMoreContent()) {
+
+                    $this->_currentFile = $this->_getNext();
+
+                    if ($this->_currentFile == null) {
+                        break;
+                    }
+
+                }
+
+            } else {
+                break;
             }
 
         }
@@ -113,60 +90,39 @@ class Files implements IVirtualComponent {
     }
 
     /**
-     * Move cursor to the next file
+     * Get next file
      */
-    protected function _moveToNextFile() {
+    protected function _getNext() {
 
         if ($this->_currentFile) {
 
-            // handle stop reading event for previous file
-            $this->_currentFile->onFinishReading();
-
-            // move to next element in array
-            $this->_currentFile = next($this->_content);
+            // get next element in array
+            $file = next($this->_content);
 
         } else {
 
             // get first element in array
-            $this->_currentFile = reset($this->_content);
+            $file = reset($this->_content);
 
         }
 
-        if ($this->_currentFile) {
+        if ($file) {
 
-            // handle start reading event for new file
-            $this->_currentFile->onStartReading();
+            // set archive
+            $file->setArchive($this->_archive);
 
-        } else {
+            // reset file
+            $file->reset();
+
+        } else  {
 
             // mark end of content
-            $this->_hasMoreContent = false;
+            $this->_status = Constants::STATUS_ALMOST_DONE;
 
         }
 
-    }
+        return $file;
 
-    /**
-     * Return true if object has more content and false otherwise
-     *
-     * @return bool
-     */
-    public function hasMoreContent() {
-        return $this->_hasMoreContent;
-    }
-
-    /**
-     * Event fired when reading starts
-     */
-    public function onStartReading() {
-        $this->reset();
-    }
-
-    /**
-     * Event fired when reading stops
-     */
-    public function onFinishReading() {
-        // nothing to do here
     }
 
 }
