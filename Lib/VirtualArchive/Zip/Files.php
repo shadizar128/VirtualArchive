@@ -54,22 +54,30 @@ class Files implements IVirtualComponent {
 
     /**
      * Class constructor.
-     * @param VirtualArchive $archive
+     *
      * @param array $params
      */
-    public function __construct(VirtualArchive $archive, array $params) {
-
-        // set archive
-        $this->_archive = $archive;
+    public function __construct(array $params) {
 
         // set content
         $this->_content = $params['files'];
-        foreach ($this->_content as $file) {
-            $file->setArchive($this->_archive);
-        }
 
         // reset
         $this->reset();
+
+    }
+
+    /**
+     * Set archive
+     *
+     * @param VirtualArchive $archive
+     */
+    public function setArchive($archive) {
+
+        $this->_archive = $archive;
+        foreach ($this->_content as $file) {
+            $file->setArchive($this->_archive);
+        }
 
     }
 
@@ -133,7 +141,7 @@ class Files implements IVirtualComponent {
     public function hasMoreContent() {
 
         if ($this->_hasMoreContent) {
-            $this->_hasMoreContent = current($this->_content) === false;
+            $this->_hasMoreContent = current($this->_content) !== false;
         }
 
         return $this->_hasMoreContent;

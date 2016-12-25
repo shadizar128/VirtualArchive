@@ -7,7 +7,7 @@ interface IVirtualComponent {
      * Set archive
      * @param IVirtualArchive $archive
      */
-    public function setArchive(IVirtualArchive $archive);
+    public function setArchive($archive);
 
     /**
      * Reset data

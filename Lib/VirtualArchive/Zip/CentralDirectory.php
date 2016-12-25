@@ -7,7 +7,7 @@ class CentralDirectory implements IVirtualComponent {
     /**
      * @var string Path to an empty archive
      */
-    protected $_baseZipPath = '';
+    protected $_baseZipPath = '/../Resources/empty.zip';
 
     /**
      * @var array A map for the end of central directory
@@ -58,17 +58,23 @@ class CentralDirectory implements IVirtualComponent {
 
     /**
      * Class constructor.
-     * @param VirtualArchive $archive
+     *
      * @param array $params
      */
-    public function __construct(VirtualArchive $archive, array $params) {
-
-        // set archive
-        $this->_archive = $archive;
+    public function __construct(array $params) {
 
         // reset
         $this->reset();
 
+    }
+
+    /**
+     * Set archive
+     *
+     * @param VirtualArchive $archive
+     */
+    public function setArchive($archive) {
+        $this->_archive = $archive;
     }
 
     /**
@@ -77,7 +83,7 @@ class CentralDirectory implements IVirtualComponent {
     public function reset() {
 
         // reset content
-        $this->_content = file_get_contents($this->_baseZipPath);
+        $this->_content = file_get_contents(dirname(__FILE__) . $this->_baseZipPath);
 
         // reset counters
         $this->_position = 0;
@@ -103,8 +109,14 @@ class CentralDirectory implements IVirtualComponent {
         // read data
         $bytes = substr($this->_content, $this->_position, $count);
 
-        // update position
-        $this->_position += strlen($bytes);
+        // get number of bytes read
+        $bytesRead = strlen($bytes);
+
+        // update content position
+        $this->_position += $bytesRead;
+
+        // update archive position
+        $this->_archive->incrementPosition(strlen($bytes));
 
         return $bytes;
 
@@ -147,6 +159,16 @@ class CentralDirectory implements IVirtualComponent {
         $value = substr($this->_content, $properties['offset'], $properties['length']);
         $value = unpack($properties['method'], $value);
         return array_pop($value);
+    }
+
+    /**
+     * Get attribute
+     *
+     * @param string $name Name of the attribute
+     * @param $value
+     */
+    public function incrementAttribute($name, $value) {
+        $this->setAttribute($name, $this->getAttribute($name) + $value);
     }
 
 }

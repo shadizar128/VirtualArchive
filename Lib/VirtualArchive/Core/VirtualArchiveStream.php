@@ -90,7 +90,7 @@ class VirtualArchiveStream {
      * @return bool
      */
     function stream_eof() {
-        return $this->_archive->hasMoreContent();
+        return !$this->_archive->hasMoreContent();
     }
 
 }

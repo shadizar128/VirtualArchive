@@ -9,7 +9,7 @@ use Lib\VirtualArchive\Interfaces\IVirtualComponent;
  * Inspired by this code: http://www.granthinkson.com/2005/07/01/create-zip-files-dynamically-using-php/
  * Zip file structure: https://users.cs.jmu.edu/buchhofp/forensics/formats/pkzip.html
  */
-class VirtualArchive implements IVirtualArchive, IVirtualComponent {
+class VirtualArchive implements IVirtualArchive {
 
     /**
      * @var CentralDirectory
@@ -44,9 +44,14 @@ class VirtualArchive implements IVirtualArchive, IVirtualComponent {
      */
     public function __construct(array $params) {
 
-        $this->_centralDirectory = new CentralDirectory($this, $params);
-        $this->_headers = new Headers($this, $params);
-        $this->_files = new Files($this, $params);
+        $this->_centralDirectory = new CentralDirectory($params);
+        $this->_centralDirectory->setArchive($this);
+
+        $this->_headers = new Headers($params);
+        $this->_headers->setArchive($this);
+
+        $this->_files = new Files($params);
+        $this->_files->setArchive($this);
 
     }
 
@@ -82,9 +87,6 @@ class VirtualArchive implements IVirtualArchive, IVirtualComponent {
     public function read($count) {
 
         $bytes = "";
-        if (!$this->hasMoreContent()) {
-            return $bytes;
-        }
 
         // read from files
         $bytesToRead = $count - strlen($bytes);
@@ -104,8 +106,6 @@ class VirtualArchive implements IVirtualArchive, IVirtualComponent {
             $bytes .= $this->_centralDirectory->read($bytesToRead);
         }
 
-        $this->_position += strlen($bytes);
-
         return $bytes;
 
     }
@@ -120,6 +120,15 @@ class VirtualArchive implements IVirtualArchive, IVirtualComponent {
     }
 
     /**
+     * Update cursor position
+     *
+     * @param int $count
+     */
+    public function incrementPosition(int $count) {
+        $this->_position += $count;
+    }
+
+    /**
      * Return true if the archive has more content
      *
      * @return bool
@@ -127,11 +136,28 @@ class VirtualArchive implements IVirtualArchive, IVirtualComponent {
     public function hasMoreContent() {
 
         if ($this->_hasMoreContent) {
-            $this->_hasMoreContent = $this->_files->hasMoreContent() && $this->_headers->hasMoreContent() && $this->_centralDirectory->hasMoreContent();
+            $this->_hasMoreContent =
+                $this->_files->hasMoreContent() ||
+                $this->_headers->hasMoreContent() ||
+                $this->_centralDirectory->hasMoreContent();
         }
 
         return $this->_hasMoreContent;
 
+    }
+
+    /**
+     * @return Headers
+     */
+    public function getHeaders() {
+        return $this->_headers;
+    }
+
+    /**
+     * @return CentralDirectory
+     */
+    public function getCentralDirectory() {
+        return $this->_centralDirectory;
     }
 
 }
