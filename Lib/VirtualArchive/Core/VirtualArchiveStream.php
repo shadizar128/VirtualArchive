@@ -93,4 +93,22 @@ class VirtualArchiveStream {
         return !$this->_archive->hasMoreContent();
     }
 
+    /**
+     * Only suport seek for reset purposes
+     *
+     * @param int $offset
+     * @param int $whence
+     * @return bool
+     */
+    function stream_seek($offset, $whence) {
+
+        if ($offset == 0 && $whence == SEEK_SET) {
+            $this->_archive->reset();
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
 }

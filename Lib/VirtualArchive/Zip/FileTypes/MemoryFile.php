@@ -92,6 +92,7 @@ class MemoryFile implements IVirtualComponent {
     public function reset() {
 
         // reset counters
+        $this->_position = 0;
         $this->_hasMoreContent = true;
         $this->_addMetadata = true;
 

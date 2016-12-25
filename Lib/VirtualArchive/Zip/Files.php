@@ -86,6 +86,11 @@ class Files implements IVirtualComponent {
      */
     public function reset() {
 
+        // reset all files
+        foreach ($this->_content as $file) {
+            $file->reset();
+        }
+
         // reset content
         reset($this->_content);
 
