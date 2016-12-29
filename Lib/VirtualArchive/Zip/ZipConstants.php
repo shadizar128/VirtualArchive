@@ -1,16 +1,19 @@
 <?php
 namespace Lib\VirtualArchive\Zip;
 
-class Constants {
+class ZipConstants {
 
     // end of central directory signature
-    const CENTRAL_DIR_SIGNATURE = "\x50\x4b\x05\x06";
+    const END_OF_CENTRAL_DIRECTORY_SIGNATURE = "\x50\x4b\x05\x06";
 
     // file signature
-    const FILE_SIGNATURE = "\x50\x4b\x03\x04";
+    const LOCAL_FILE_SIGNATURE = "\x50\x4b\x03\x04";
 
     // header signature
-    const HEADER_SIGNATURE = "\x50\x4b\x01\x02";
+    const FILE_HEADER_SIGNATURE = "\x50\x4b\x01\x02";
+
+    // header size
+    const FILE_HEADER_SIZE = 46;
 
     // version made by
     const VERSION_MADE_BY = "\x14\x00";
@@ -29,11 +32,5 @@ class Constants {
 
     // last mod date
     const LAST_MODIFIED_DATE = "\x00\x00";
-
-    // file status
-    const STATUS_NOT_STARTED    = 0x01;
-    const STATUS_PROCESSING     = 0x02;
-    const STATUS_ALMOST_DONE    = 0x03;
-    const STATUS_DONE           = 0x04;
 
 }

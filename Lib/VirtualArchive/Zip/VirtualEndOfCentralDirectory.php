@@ -1,46 +1,21 @@
 <?php
 namespace Lib\VirtualArchive\Zip;
+use Lib\VirtualArchive\Constants;
 use Lib\VirtualArchive\Core\AbstractVirtualComponent;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
+use Lib\VirtualArchive\Zip\Maps\EndOfCentralDirectoryMap;
 
-class CentralDirectory extends AbstractVirtualComponent implements IVirtualComponent {
-
-    /**
-     * @var string Path to an empty archive
-     */
-    protected $_baseZipPath = '/../Resources/empty.zip';
-
-    /**
-     * @var array A map for the end of central directory
-     */
-    protected $_map = array(
-        'diskEntries' => array(
-            'offset' => 8,
-            'length' => 2,
-            'method'  => 'v'
-        ),
-        'totalEntries' => array(
-            'offset' => 10,
-            'length' => 2,
-            'method'  => 'v'
-        ),
-        'centralDirectorySize' => array(
-            'offset' => 12,
-            'length' => 4,
-            'method'  => 'V'
-        ),
-        'centralDirectoryOffset' => array(
-            'offset' => 16,
-            'length' => 4,
-            'method'  => 'V'
-        ),
-
-    );
+class VirtualEndOfCentralDirectory extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
      * @var string Content
      */
     protected $_content;
+
+    /**
+     * @var string Path to an empty archive
+     */
+    protected $_baseZipPath = '/../Resources/empty.zip';
 
     /**
      * @var int Cursor position
@@ -98,33 +73,29 @@ class CentralDirectory extends AbstractVirtualComponent implements IVirtualCompo
      * Set attribute
      *
      * @param string $name Name of the attribute
-     * @param int $value Value of the attribute
+     * @param mixed $value Value of the attribute
      */
-    public function setAttribute($name, $value) {
-        $properties = $this->_map[$name];
-        $this->_content = substr_replace($this->_content, pack($properties['method'], $value), $properties['offset'], $properties['length']);
+    public function setAttribute(string $name, $value) {
+        EndOfCentralDirectoryMap::setAttribute($this->_content, $name, $value);
     }
 
     /**
      * Get attribute
      *
-     * @param string $name Name of the attribute
+     * @param string $name
      * @return mixed
      */
-    public function getAttribute($name) {
-        $properties = $this->_map[$name];
-        $value = substr($this->_content, $properties['offset'], $properties['length']);
-        $value = unpack($properties['method'], $value);
-        return array_pop($value);
+    public function getAttribute(string $name) {
+        return EndOfCentralDirectoryMap::getAttribute($this->_content, $name);
     }
 
     /**
      * Get attribute
      *
-     * @param string $name Name of the attribute
-     * @param $value
+     * @param string $name
+     * @param int $value
      */
-    public function incrementAttribute($name, $value) {
+    public function incrementAttribute(string $name, int $value) {
         $this->setAttribute($name, $this->getAttribute($name) + $value);
     }
 

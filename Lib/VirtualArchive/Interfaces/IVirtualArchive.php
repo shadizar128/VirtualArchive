@@ -15,7 +15,7 @@ interface IVirtualArchive {
      * @return null|string
      *
      */
-    public function read($count);
+    public function read(int $count);
 
     /**
      * Get cursor position

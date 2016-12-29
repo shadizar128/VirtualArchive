@@ -1,6 +1,7 @@
 <?php
 namespace Lib\VirtualArchive\Core;
-use Lib\VirtualArchive\Zip\Constants;
+use Lib\VirtualArchive\Constants;
+use Lib\VirtualArchive\Zip\ZipConstants;
 use Lib\VirtualArchive\Zip\VirtualArchive;
 
 abstract class AbstractVirtualComponent {
@@ -83,7 +84,7 @@ abstract class AbstractVirtualComponent {
      *                If no more data is available, return an empty string.
      *
      */
-    public function read($count) {
+    public function read(int $count) {
 
         $bytes = '';
         if ($this->_status == Constants::STATUS_DONE) {

@@ -1,12 +1,14 @@
 <?php
 namespace Lib\VirtualArchive\Zip;
+use Lib\VirtualArchive\Constants;
 use Lib\VirtualArchive\Core\AbstractVirtualComponent;
+use Lib\VirtualArchive\Core\FileTypes\MemoryFile;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 
-class Headers extends AbstractVirtualComponent implements IVirtualComponent {
+class VirtualCentralDirectoryHeaders extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
-     * @var string Content
+     * @var MemoryFile Content
      */
     protected $_content;
 
@@ -16,6 +18,16 @@ class Headers extends AbstractVirtualComponent implements IVirtualComponent {
     protected $_position = 0;
 
     /**
+     * Class constructor.
+     */
+    public function __construct() {
+
+        // create empty content
+        $this->_content = new MemoryFile('', '');
+
+    }
+
+    /**
      * Reset data
      */
     public function reset() {
@@ -23,11 +35,8 @@ class Headers extends AbstractVirtualComponent implements IVirtualComponent {
         // call parent method
         parent::reset();
 
-        // reset position
-        $this->_position = 0;
-
         // reset content
-        $this->_content = "";
+        $this->_content->truncate();
 
     }
 
@@ -42,16 +51,13 @@ class Headers extends AbstractVirtualComponent implements IVirtualComponent {
     protected function _read(int $count) {
 
         // read data
-        $bytes = substr($this->_content, $this->_position, $count);
-
-        // update content position
-        $this->_position += strlen($bytes);
+        $bytes = $this->_content->read($count);
 
         // update archive position
         $this->_archive->incrementPosition(strlen($bytes));
 
         // mark end of content
-        if ($this->_position >= strlen($this->_content)) {
+        if ($this->_content->eof()) {
             $this->_status = Constants::STATUS_ALMOST_DONE;
         }
 
@@ -65,7 +71,7 @@ class Headers extends AbstractVirtualComponent implements IVirtualComponent {
      * @param string $header
      */
     public function add(string $header) {
-        $this->_content .= $header;
+        $this->_content->append($header);
     }
 
 }

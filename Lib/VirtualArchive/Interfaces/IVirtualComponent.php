@@ -22,7 +22,7 @@ interface IVirtualComponent {
      *                If no more data is available, return an empty string.
      *
      */
-    public function read($count);
+    public function read(int $count);
 
     /**
      * Return true if object has more content and false otherwise

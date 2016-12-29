@@ -1,9 +1,10 @@
 <?php
 namespace Lib\VirtualArchive\Zip;
+use Lib\VirtualArchive\Constants;
 use Lib\VirtualArchive\Core\AbstractVirtualComponent;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 
-class Files extends AbstractVirtualComponent implements IVirtualComponent {
+class VirtualFiles extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
      * @var IVirtualComponent[]
@@ -50,14 +51,14 @@ class Files extends AbstractVirtualComponent implements IVirtualComponent {
      */
     protected function _read(int $count) {
 
-        $bytes = "";
+        $bytes = '';
         $bytesToRead = $count;
 
         while ($bytesToRead > 0) {
 
             // if no current file
             if ($this->_currentFile == null) {
-                $this->_currentFile = $this->_getNext();
+                $this->_currentFile = $this->_getNextFile();
             }
 
             if ($this->_currentFile) {
@@ -71,8 +72,10 @@ class Files extends AbstractVirtualComponent implements IVirtualComponent {
                 // if current file has no more content
                 if (!$this->_currentFile->hasMoreContent()) {
 
-                    $this->_currentFile = $this->_getNext();
+                    // move to next file
+                    $this->_currentFile = $this->_getNextFile();
 
+                    // check if there is a next file
                     if ($this->_currentFile == null) {
                         break;
                     }
@@ -92,7 +95,7 @@ class Files extends AbstractVirtualComponent implements IVirtualComponent {
     /**
      * Get next file
      */
-    protected function _getNext() {
+    protected function _getNextFile() {
 
         if ($this->_currentFile) {
 

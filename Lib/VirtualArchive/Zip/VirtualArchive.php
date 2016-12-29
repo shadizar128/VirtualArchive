@@ -1,5 +1,6 @@
 <?php
 namespace Lib\VirtualArchive\Zip;
+use Lib\VirtualArchive\Constants;
 use Lib\VirtualArchive\Exceptions\FileNotFoundException;
 use Lib\VirtualArchive\Interfaces\IVirtualArchive;
 
@@ -11,17 +12,17 @@ use Lib\VirtualArchive\Interfaces\IVirtualArchive;
 class VirtualArchive implements IVirtualArchive {
 
     /**
-     * @var CentralDirectory
+     * @var VirtualEndOfCentralDirectory
      */
-    protected $_centralDirectory;
+    protected $_endOfCentralDirectory;
 
     /**
-     * @var Headers
+     * @var VirtualCentralDirectoryHeaders
      */
-    protected $_headers;
+    protected $_centralDirectoryHeaders;
 
     /**
-     * @var Files
+     * @var VirtualFiles
      */
     protected $_files;
 
@@ -43,9 +44,9 @@ class VirtualArchive implements IVirtualArchive {
      */
     public function __construct(array $params) {
 
-        $this->_centralDirectory = new CentralDirectory($params);
-        $this->_headers = new Headers($params);
-        $this->_files = new Files($params);
+        $this->_endOfCentralDirectory = new VirtualEndOfCentralDirectory($params);
+        $this->_centralDirectoryHeaders = new VirtualCentralDirectoryHeaders($params);
+        $this->_files = new VirtualFiles($params);
 
         $this->reset();
 
@@ -65,12 +66,12 @@ class VirtualArchive implements IVirtualArchive {
     public function reset() {
 
         // reset central directory
-        $this->_centralDirectory->setArchive($this);
-        $this->_centralDirectory->reset();
+        $this->_endOfCentralDirectory->setArchive($this);
+        $this->_endOfCentralDirectory->reset();
 
         // reset headers
-        $this->_headers->setArchive($this);
-        $this->_headers->reset();
+        $this->_centralDirectoryHeaders->setArchive($this);
+        $this->_centralDirectoryHeaders->reset();
 
         // reset files
         $this->_files->reset();
@@ -91,7 +92,7 @@ class VirtualArchive implements IVirtualArchive {
      * @return string
      *
      */
-    public function read($count) {
+    public function read(int $count) {
 
         $bytes = '';
         if ($this->_status == Constants::STATUS_DONE) {
@@ -120,9 +121,9 @@ class VirtualArchive implements IVirtualArchive {
      * @return string
      *
      */
-    protected function _read($count) {
+    protected function _read(int $count) {
 
-        $bytes = "";
+        $bytes = '';
         $bytesToRead = $count - strlen($bytes);
 
         // read from files
@@ -132,21 +133,21 @@ class VirtualArchive implements IVirtualArchive {
         }
 
         // read from headers
-        if ($this->_headers->hasMoreContent() && $bytesToRead > 0) {
-            $bytes .= $this->_headers->read($bytesToRead);
+        if ($this->_centralDirectoryHeaders->hasMoreContent() && $bytesToRead > 0) {
+            $bytes .= $this->_centralDirectoryHeaders->read($bytesToRead);
             $bytesToRead = $count - strlen($bytes);
         }
 
         // read from central directory
-        if ($this->_centralDirectory->hasMoreContent() && $bytesToRead > 0) {
-            $bytes .= $this->_centralDirectory->read($bytesToRead);
+        if ($this->_endOfCentralDirectory->hasMoreContent() && $bytesToRead > 0) {
+            $bytes .= $this->_endOfCentralDirectory->read($bytesToRead);
             $bytesToRead = $count - strlen($bytes);
         }
 
         if (
             !$this->_files->hasMoreContent() &&
-            !$this->_headers->hasMoreContent() &&
-            !$this->_centralDirectory->hasMoreContent()
+            !$this->_centralDirectoryHeaders->hasMoreContent() &&
+            !$this->_endOfCentralDirectory->hasMoreContent()
         ) {
             $this->_status = Constants::STATUS_DONE;
         }
@@ -195,17 +196,17 @@ class VirtualArchive implements IVirtualArchive {
     }
 
     /**
-     * @return Headers
+     * @return VirtualCentralDirectoryHeaders
      */
-    public function getHeaders() {
-        return $this->_headers;
+    public function getCentralDirectoryHeaders() {
+        return $this->_centralDirectoryHeaders;
     }
 
     /**
-     * @return CentralDirectory
+     * @return VirtualEndOfCentralDirectory
      */
-    public function getCentralDirectory() {
-        return $this->_centralDirectory;
+    public function getEndOfCentralDirectory() {
+        return $this->_endOfCentralDirectory;
     }
 
     /**
