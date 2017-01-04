@@ -120,7 +120,7 @@ class VirtualFiles extends AbstractVirtualComponent implements IVirtualComponent
         } else  {
 
             // mark end of content
-            $this->_status = Constants::STATUS_ALMOST_DONE;
+            $this->_state = Constants::STATE_ALMOST_DONE;
 
         }
 

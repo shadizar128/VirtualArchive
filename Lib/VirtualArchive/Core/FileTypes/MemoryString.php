@@ -2,17 +2,12 @@
 namespace Lib\VirtualArchive\Core\FileTypes;
 use Lib\VirtualArchive\Interfaces\IFile;
 
-class MemoryFile implements IFile {
+class MemoryString implements IFile {
 
     /**
      * @var string
      */
     protected $_content;
-
-    /**
-     * @var string
-     */
-    protected $_fileName;
 
     /**
      * @var int Read pointer
@@ -22,12 +17,10 @@ class MemoryFile implements IFile {
     /**
      * Class constructor.
      *
-     * @param string $fileName
      * @param string $bytes
      */
-    public function __construct(string $fileName, string $bytes) {
+    public function __construct(string $bytes) {
 
-        $this->_fileName = $fileName;
         $this->_content = $bytes;
 
     }
@@ -51,7 +44,7 @@ class MemoryFile implements IFile {
                 $result = true;
                 break;
             case SEEK_END:
-                $this->_pointer = strlen($this->_content) + $offset;
+                $this->_pointer = $this->getSize() + $offset;
                 $result = true;
                 break;
             default:
@@ -92,6 +85,15 @@ class MemoryFile implements IFile {
     }
 
     /**
+     * Returns the current position of the file read/write pointer
+     *
+     * @return int The position of the file pointer
+     */
+    public function tell() {
+        return $this->_pointer;
+    }
+
+    /**
      * Return true if end of file
      *
      * @return bool
@@ -109,6 +111,7 @@ class MemoryFile implements IFile {
     public function truncate(int $size) {
         $this->_content = substr($this->_content, 0, $size);
         $this->_pointer = 0;
+        return true;
     }
 
     /**
@@ -127,15 +130,6 @@ class MemoryFile implements IFile {
      */
     public function getSize() {
         return strlen($this->_content);
-    }
-
-    /**
-     * Get file name
-     *
-     * @return string
-     */
-    public function getFileName() {
-        return $this->_fileName;
     }
 
 }

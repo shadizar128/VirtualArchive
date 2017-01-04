@@ -6,7 +6,7 @@ use Lib\VirtualArchive\Interfaces\IFile;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 use Lib\VirtualArchive\Zip\ZipConstants;
 
-class UncompressedMemoryFile extends AbstractVirtualComponent implements IVirtualComponent {
+class UncompressedSmallFile extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
      * @var array File metadata
@@ -21,16 +21,17 @@ class UncompressedMemoryFile extends AbstractVirtualComponent implements IVirtua
     /**
      * Class constructor.
      *
+     * @param string $fileName
      * @param IFile $file
      */
-    public function __construct(IFile $file) {
+    public function __construct(string $fileName, IFile $file) {
 
         // set file
         $this->_file = $file;
 
         // compute metadata
         $this->_metadata = [];
-        $this->_metadata['fileName'] = $this->_file->getFileName();
+        $this->_metadata['fileName'] = $fileName;
         $this->_metadata['uncompressedSize'] = $this->_file->getSize();
 
         // read all content of file
@@ -102,7 +103,7 @@ class UncompressedMemoryFile extends AbstractVirtualComponent implements IVirtua
 
         // mark end of content
         if ($this->_file->eof()) {
-            $this->_status = Constants::STATUS_ALMOST_DONE;
+            $this->_state = Constants::STATE_ALMOST_DONE;
         }
 
         return $bytes;

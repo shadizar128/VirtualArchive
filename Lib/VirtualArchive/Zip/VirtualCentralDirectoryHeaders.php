@@ -2,13 +2,13 @@
 namespace Lib\VirtualArchive\Zip;
 use Lib\VirtualArchive\Constants;
 use Lib\VirtualArchive\Core\AbstractVirtualComponent;
-use Lib\VirtualArchive\Core\FileTypes\MemoryFile;
+use Lib\VirtualArchive\Core\FileTypes\MemoryString;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 
 class VirtualCentralDirectoryHeaders extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
-     * @var MemoryFile Content
+     * @var MemoryString Content
      */
     protected $_content;
 
@@ -23,7 +23,7 @@ class VirtualCentralDirectoryHeaders extends AbstractVirtualComponent implements
     public function __construct() {
 
         // create empty content
-        $this->_content = new MemoryFile('', '');
+        $this->_content = new MemoryString('');
 
     }
 
@@ -36,7 +36,7 @@ class VirtualCentralDirectoryHeaders extends AbstractVirtualComponent implements
         parent::reset();
 
         // reset content
-        $this->_content->truncate();
+        $this->_content->truncate(0);
 
     }
 
@@ -58,7 +58,7 @@ class VirtualCentralDirectoryHeaders extends AbstractVirtualComponent implements
 
         // mark end of content
         if ($this->_content->eof()) {
-            $this->_status = Constants::STATUS_ALMOST_DONE;
+            $this->_state = Constants::STATE_ALMOST_DONE;
         }
 
         return $bytes;
@@ -71,7 +71,7 @@ class VirtualCentralDirectoryHeaders extends AbstractVirtualComponent implements
      * @param string $header
      */
     public function add(string $header) {
-        $this->_content->append($header);
+        $this->_content->write($header);
     }
 
 }

@@ -14,7 +14,7 @@ abstract class AbstractVirtualComponent {
     /**
      * @var
      */
-    protected $_status = Constants::STATUS_NOT_STARTED;
+    protected $_state = Constants::STATE_NOT_STARTED;
 
     /**
      * Set archive
@@ -32,9 +32,9 @@ abstract class AbstractVirtualComponent {
      */
     public function hasMoreContent() {
 
-        switch ($this->_status) {
-            case Constants::STATUS_NOT_STARTED:
-            case Constants::STATUS_PROCESSING:
+        switch ($this->_state) {
+            case Constants::STATE_NOT_STARTED:
+            case Constants::STATE_PROCESSING:
                 $hasMoreContent = true;
                 break;
             default:
@@ -51,8 +51,8 @@ abstract class AbstractVirtualComponent {
      */
     public function onStartReading() {
 
-        // update status
-        $this->_status = Constants::STATUS_PROCESSING;
+        // update state
+        $this->_state = Constants::STATE_PROCESSING;
 
     }
 
@@ -61,8 +61,8 @@ abstract class AbstractVirtualComponent {
      */
     public function onFinishReading() {
 
-        // update status
-        $this->_status = Constants::STATUS_DONE;
+        // update state
+        $this->_state = Constants::STATE_DONE;
 
     }
 
@@ -71,8 +71,8 @@ abstract class AbstractVirtualComponent {
      */
     public function reset() {
 
-        // reset status
-        $this->_status = Constants::STATUS_NOT_STARTED;
+        // reset state
+        $this->_state = Constants::STATE_NOT_STARTED;
 
     }
 
@@ -87,18 +87,18 @@ abstract class AbstractVirtualComponent {
     public function read(int $count) {
 
         $bytes = '';
-        if ($this->_status == Constants::STATUS_DONE) {
+        if ($this->_state == Constants::STATE_DONE) {
             return $bytes;
         }
 
-        if ($this->_status == Constants::STATUS_NOT_STARTED) {
+        if ($this->_state == Constants::STATE_NOT_STARTED) {
             $this->onStartReading();
         }
 
         // read data
         $bytes = $this->_read($count);
 
-        if ($this->_status == Constants::STATUS_ALMOST_DONE) {
+        if ($this->_state == Constants::STATE_ALMOST_DONE) {
             $this->onFinishReading();
         }
 

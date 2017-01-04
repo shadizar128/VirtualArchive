@@ -62,7 +62,7 @@ class VirtualEndOfCentralDirectory extends AbstractVirtualComponent implements I
 
         // mark end of content
         if ($this->_position >= strlen($this->_content)) {
-            $this->_status = Constants::STATUS_ALMOST_DONE;
+            $this->_state = Constants::STATE_ALMOST_DONE;
         }
 
         return $bytes;

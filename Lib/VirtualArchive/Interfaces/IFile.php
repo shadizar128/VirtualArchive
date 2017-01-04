@@ -23,6 +23,13 @@ interface IFile {
     public function read(int $count);
 
     /**
+     * Returns the current position of the file read/write pointer
+     *
+     * @return int The position of the file pointer
+     */
+    public function tell();
+
+    /**
      * Return true if end of file
      *
      * @return bool
@@ -50,12 +57,5 @@ interface IFile {
      * @return int
      */
     public function getSize();
-
-    /**
-     * Get file name
-     *
-     * @return string
-     */
-    public function getFileName();
 
 }

@@ -2,12 +2,12 @@
 namespace Lib\VirtualArchive\Zip\FileTypes;
 use Lib\VirtualArchive\Constants;
 use Lib\VirtualArchive\Core\AbstractVirtualComponent;
-use Lib\VirtualArchive\Core\FileTypes\MemoryFile;
+use Lib\VirtualArchive\Core\FileTypes\MemoryString;
 use Lib\VirtualArchive\Interfaces\IFile;
 use Lib\VirtualArchive\Interfaces\IVirtualComponent;
 use Lib\VirtualArchive\Zip\ZipConstants;
 
-class CompressedDiskFile extends AbstractVirtualComponent implements IVirtualComponent {
+class CompressedFile extends AbstractVirtualComponent implements IVirtualComponent {
 
     /**
      * @var array File metadata
@@ -15,7 +15,7 @@ class CompressedDiskFile extends AbstractVirtualComponent implements IVirtualCom
     protected $_metadata;
 
     /**
-     * @var MemoryFile
+     * @var MemoryString
      */
     protected $_file;
 
@@ -103,7 +103,7 @@ class CompressedDiskFile extends AbstractVirtualComponent implements IVirtualCom
 
         // mark end of content
         if ($this->_file->eof()) {
-            $this->_status = Constants::STATUS_ALMOST_DONE;
+            $this->_state = Constants::STATE_ALMOST_DONE;
         }
 
         return $bytes;

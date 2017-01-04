@@ -3,7 +3,7 @@ namespace Lib\VirtualArchive\Core\FileTypes;
 use Lib\VirtualArchive\Constants;
 use Lib\VirtualArchive\Interfaces\IFile;
 
-class DiskFile implements IFile {
+class FileHandle implements IFile {
 
     /**
      * @var resource File handle
@@ -11,18 +11,12 @@ class DiskFile implements IFile {
     protected $_handle;
 
     /**
-     * @var string
-     */
-    protected $_fileName;
-
-    /**
      * Class constructor.
      *
-     * @param string $fileName
      * @param resource $handle
      * @throws \Exception
      */
-    public function __construct(string $fileName, $handle) {
+    public function __construct($handle) {
 
         // check parameter
         if (!is_resource($handle)) {
@@ -31,9 +25,6 @@ class DiskFile implements IFile {
 
         // set file handle
         $this->_handle = $handle;
-
-        // set file name
-        $this->_fileName = $fileName;
 
     }
 
@@ -77,6 +68,15 @@ class DiskFile implements IFile {
     }
 
     /**
+     * Returns the current position of the file read/write pointer
+     *
+     * @return int The position of the file pointer
+     */
+    public function tell() {
+        return ftell($this->_handle);
+    }
+
+    /**
      * Return true if end of file
      *
      * @return bool
@@ -111,15 +111,6 @@ class DiskFile implements IFile {
      */
     public function getSize() {
         return fstat($this->_handle)['size'];
-    }
-
-    /**
-     * Get file name
-     *
-     * @return string
-     */
-    public function getFileName() {
-        return $this->_fileName;
     }
 
 }

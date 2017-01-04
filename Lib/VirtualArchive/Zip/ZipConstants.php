@@ -6,8 +6,11 @@ class ZipConstants {
     // end of central directory signature
     const END_OF_CENTRAL_DIRECTORY_SIGNATURE = "\x50\x4b\x05\x06";
 
-    // file signature
+    // local file signature
     const LOCAL_FILE_SIGNATURE = "\x50\x4b\x03\x04";
+
+    // local file header size
+    const LOCAL_FILE_HEADER_SIZE = 42;
 
     // header signature
     const FILE_HEADER_SIGNATURE = "\x50\x4b\x01\x02";

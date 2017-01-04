@@ -32,9 +32,9 @@ class VirtualArchive implements IVirtualArchive {
     protected $_position;
 
     /**
-     * @var bool Read status
+     * @var bool Archive state
      */
-    protected $_status = Constants::STATUS_NOT_STARTED;
+    protected $_state = Constants::STATE_NOT_STARTED;
 
     /**
      * Public constructor
@@ -77,8 +77,8 @@ class VirtualArchive implements IVirtualArchive {
         $this->_files->reset();
         $this->_files->setArchive($this);
 
-        // reset status
-        $this->_status = Constants::STATUS_NOT_STARTED;
+        // reset state
+        $this->_state = Constants::STATE_NOT_STARTED;
 
         // reset position
         $this->_position = 0;
@@ -95,18 +95,18 @@ class VirtualArchive implements IVirtualArchive {
     public function read(int $count) {
 
         $bytes = '';
-        if ($this->_status == Constants::STATUS_DONE) {
+        if ($this->_state == Constants::STATE_DONE) {
             return $bytes;
         }
 
-        if ($this->_status == Constants::STATUS_NOT_STARTED) {
+        if ($this->_state == Constants::STATE_NOT_STARTED) {
             $this->onStartReading();
         }
 
         // read data
         $bytes = $this->_read($count);
 
-        if ($this->_status == Constants::STATUS_ALMOST_DONE) {
+        if ($this->_state == Constants::STATE_ALMOST_DONE) {
             $this->onFinishReading();
         }
 
@@ -149,7 +149,7 @@ class VirtualArchive implements IVirtualArchive {
             !$this->_centralDirectoryHeaders->hasMoreContent() &&
             !$this->_endOfCentralDirectory->hasMoreContent()
         ) {
-            $this->_status = Constants::STATUS_DONE;
+            $this->_state = Constants::STATE_DONE;
         }
 
         return $bytes;
@@ -181,9 +181,9 @@ class VirtualArchive implements IVirtualArchive {
      */
     public function hasMoreContent() {
 
-        switch ($this->_status) {
-            case Constants::STATUS_NOT_STARTED:
-            case Constants::STATUS_PROCESSING:
+        switch ($this->_state) {
+            case Constants::STATE_NOT_STARTED:
+            case Constants::STATE_PROCESSING:
                 $hasMoreContent = true;
                 break;
             default:
@@ -214,8 +214,8 @@ class VirtualArchive implements IVirtualArchive {
      */
     public function onStartReading() {
 
-        // update status
-        $this->_status = Constants::STATUS_PROCESSING;
+        // update state
+        $this->_state = Constants::STATE_PROCESSING;
 
     }
 
@@ -224,8 +224,8 @@ class VirtualArchive implements IVirtualArchive {
      */
     public function onFinishReading() {
 
-        // update status
-        $this->_status = Constants::STATUS_DONE;
+        // update state
+        $this->_state = Constants::STATE_DONE;
 
     }
 
